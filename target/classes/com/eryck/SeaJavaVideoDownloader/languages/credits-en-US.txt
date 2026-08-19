@@ -1,0 +1,37 @@
+This software relies on the following open-source projects:
+
+1. JavaFX
+   - License: GPLv2 with Classpath Exception
+   - Description: Client application platform for Java.
+   - Website: https://openjfx.io/
+   - Repository: https://github.com/openjdk/jfx
+
+2. Google Gson
+   - License: Apache License 2.0
+   - Description: Java library used to convert Java Objects into JSON and vice versa.
+   - Repository: https://github.com/google/gson
+
+3. FFmpeg
+   - License: LGPL v2.1+ / GPL v2+
+   - Description: Complete, cross-platform solution to record, convert and stream audio/video.
+   - Website: https://ffmpeg.org/download.html
+   - FFmpeg for windows repository: https://github.com/BtbN/FFmpeg-Builds
+
+4. yt-dlp
+   - License: Unlicense (Public Domain)
+   - Repository: https://github.com/yt-dlp/yt-dlp
+
+5. TwelveMonkeys ImageIO
+   - License: BSD 3-Clause License
+   - Description: A collection of plugins and extensions for Java's ImageIO, providing pure Java support for WebP decoding.
+   - Repository: https://github.com/haraldk/TwelveMonkeys
+
+6. XZ for Java (by Tukaani)
+   - License: Public Domain
+   - Website: https://tukaani.org/xz/java.html
+
+7. QuickJS
+   - License: MIT License
+   - Description: Small and embeddable JavaScript engine.
+   - Website: https://bellard.org/quickjs/
+   - Repository: https://github.com/quickjs-ng/quickjs
