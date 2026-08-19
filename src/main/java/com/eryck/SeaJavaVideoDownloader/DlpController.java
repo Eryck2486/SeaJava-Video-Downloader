@@ -120,7 +120,7 @@ public class DlpController
             }
             state.SetExitStatus(process.waitFor());
             errorThread.join();
-            if(state.getExitStatus()!=0) throw new ExecutorException("Exec command error.", cmd, state.getExitStatus(), state.getErrorOutput(), new IOException());
+            if(state.getExitStatus()!=0 || state.getErrorOutput().contains("ERROR")) throw new ExecutorException("Exec command error.", cmd, state.getExitStatus(), state.getErrorOutput(), new IOException());
         }catch (InterruptedException e){
             if (process != null && process.isAlive()) {
                 process.descendants().forEach(ProcessHandle::destroyForcibly);
@@ -140,23 +140,15 @@ public class DlpController
             List<String> cmd = new ArrayList<>();
             cmd.add(dlpbinary);
             cmd.addAll(List.of(exArgs));
-            if(!formatID.isEmpty()){ //Adding best format for midia
+            if (!formatID.isEmpty()) {
                 cmd.add("-f");
-                boolean formatted = false;
-                String formatCleanned = formatID;
-                while (!formatted) {
-                    try {
-                        Long.parseLong(formatCleanned);
-                        formatted=true;
-                    } catch (NumberFormatException e) {
-                        formatCleanned=formatCleanned.substring(0, formatCleanned.length() - 1);
-                    }
-                }
-                StringBuilder formatBuilder = new StringBuilder(formatCleanned);
-                formatBuilder.append("+ba/")
-                        .append(formatCleanned)
-                        .append("/b");
-                cmd.add(formatBuilder.toString());
+                String formatCleanned = formatID.replaceAll("\\D+", "");
+
+                String formatSpec = String.format("%s+ba[ext=m4a]/%s+ba/%s/b", formatCleanned, formatCleanned, formatCleanned);
+                cmd.add(formatSpec);
+
+                cmd.add("--merge-output-format");
+                cmd.add("mp4");
             }
             cmd.addAll(List.of(new String[]{
                     "-o",

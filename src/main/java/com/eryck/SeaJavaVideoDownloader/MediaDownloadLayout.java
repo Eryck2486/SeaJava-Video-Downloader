@@ -128,8 +128,12 @@ public class MediaDownloadLayout extends VBox {
                         DlpController.DownloadStatus status = gson.fromJson(progress.substring(9), DlpController.DownloadStatus.class);
                             Platform.runLater(() ->
                             {
-                                downloadStatusBar.setProgress(status.getPercent());
-                                downloadStatusBar.setText(status.getProgressText());
+                                if(status.eta.contains("N/A")){
+                                    downloadStatusBar.setText(Strings.gIns().CONVERTING);
+                                }else {
+                                    downloadStatusBar.setProgress(status.getPercent());
+                                    downloadStatusBar.setText(status.getProgressText());
+                                }
                             });
                         }
                     }, object ->

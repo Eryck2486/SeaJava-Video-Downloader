@@ -26,6 +26,7 @@ public class PlayListDownloadLayout extends VBox {
             return text;
         }
     }
+
     static class MediaElement extends VBox {
         MediaElement(PlayListDownloadLayout parent, PlayListInfo.Entry entry, DlpController dlpCtl, AppConfigs configs, int index){
             setVisible(false);
@@ -97,8 +98,8 @@ public class PlayListDownloadLayout extends VBox {
         Label title;
         ComboBox<MediaInfo.FormatInfo> formats;
         ComboBox<MediaInfo.MediaConvertEnum> conversionFormats;
+        int index;
         public String url;
-        public int index;
         CustomProgressBar progressBar;
 
         public void SetProgress(double progress, String text){
@@ -121,6 +122,11 @@ public class PlayListDownloadLayout extends VBox {
 
         public boolean isDownloaded(){
             return downloadEnded;
+        }
+
+        public void Reset(){
+            downloadEnded=false;
+            if(progressBar!=null) SetProgress(-1, Strings.gIns().STARTING);
         }
     }
 
@@ -250,6 +256,9 @@ public class PlayListDownloadLayout extends VBox {
         downloadBtn.setMaxWidth(Double.MAX_VALUE);
         downloadBtn.setOnAction(actionEvent -> {
             downloadArea.getChildren().clear();
+            for (MediaElement value : medias){
+                value.Reset();
+            }
             Future<?>[] actions = StartDownload();
             if(actions==null) return;
             Platform.runLater(() -> {
@@ -297,8 +306,12 @@ public class PlayListDownloadLayout extends VBox {
                         DlpController.DownloadStatus status = gson.fromJson(progress.substring(9), DlpController.DownloadStatus.class);
                         Platform.runLater(() ->
                         {
-                            value.SetProgress(status.getPercent(), status.getProgressText());
-                            UpdateProgressBar(downloadStatusBar);
+                            if(status.eta.contains("N/A")){
+                                value.SetProgress(status.getPercent(), Strings.gIns().CONVERTING);
+                            }else {
+                                value.SetProgress(status.getPercent(), status.getProgressText());
+                                UpdateProgressBar(downloadStatusBar);
+                            }
                         });
                     }
                 }, object ->
@@ -316,7 +329,7 @@ public class PlayListDownloadLayout extends VBox {
     void CheckForAllEnd(){
         boolean allend = true;
         for (MediaElement value : medias){
-            if(value.progressBar==null || !value.isDownloaded()){
+            if((value.progressBar==null || !value.isDownloaded()) && value.download()){
                 allend=false;
             }
         }
@@ -329,13 +342,15 @@ public class PlayListDownloadLayout extends VBox {
 
     void UpdateProgressBar(CustomProgressBar downloadStatusBar){
         double allProgressValue = 0;
+        int totlalDownloads = 0;
         for(MediaElement value : medias){
+            if(value.download()) totlalDownloads++;
             if(value.progressBar!=null) {
                 double percent = value.progressBar.getProgress();
                 allProgressValue += percent;
             }
         }
-        double finalPercent = allProgressValue / medias.size();
+        double finalPercent = allProgressValue / totlalDownloads;
         downloadStatusBar.setProgress(finalPercent);
         downloadStatusBar.setText(Strings.gIns().DOWNLOADING + finalPercent + "%");
     }

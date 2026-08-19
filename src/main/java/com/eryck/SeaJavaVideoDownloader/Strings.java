@@ -182,5 +182,6 @@ public class Strings {
     QUALITY_PRESET="Quality preset: ",
     SELECT_ALL="Select all",
     DEV_BY_FORMAT ="Developed by %s.\n\nAn open-source desktop application for downloading media files.\nClick 'Show Details' below to view third-party libraries and licenses.",
-    TP_LIBS_LICENCES="Third-Party Libraries & Open Source Licenses:";
+    TP_LIBS_LICENCES="Third-Party Libraries & Open Source Licenses:",
+    CONVERTING="Converting...";
 }

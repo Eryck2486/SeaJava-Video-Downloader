@@ -51,5 +51,6 @@
   "QUALITY_PRESET":"Preset de qualidade: ",
   "SELECT_ALL":"Selecionar tudo",
   "DEV_BY_FORMAT":"Desenvolvido por %s.\n\nUm aplicativo para baixar arquivos de mídia.\nClique em 'Mostrar detalhes' para ver bibliotecas e licenças de terceiros.",
-  "TP_LIBS_LICENCES":"Bibliotecas e licenças de código aberto de terceiros:"
+  "TP_LIBS_LICENCES":"Bibliotecas e licenças de código aberto de terceiros:",
+  "CONVERTING": "Convertendo..."
 }

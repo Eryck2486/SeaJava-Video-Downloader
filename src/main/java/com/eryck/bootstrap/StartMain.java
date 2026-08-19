@@ -655,8 +655,10 @@ public class StartMain {
                 }
             }
 
+            File jarPath = getRunningJarFile();
+
             List<Path> modulePaths = List.of(
-                    Paths.get(getRunningJarFile().getName()),
+                    Paths.get(jarPath.getAbsolutePath()),
                     Paths.get("deps/libs/JavaFX", osDir+JavaFXPathName+"/lib/"),
                     Paths.get("deps/libs/Gson/gson-2.14.0.jar"),
                     Paths.get("deps/libs/Webp/imageio-webp-3.14.0.jar"),
