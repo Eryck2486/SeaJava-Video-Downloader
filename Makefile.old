@@ -1,0 +1,179 @@
+JRE_MIN_VERSION=21
+SRC_DIR=src/main/java
+BUILD_DIR=build
+OUT_DIR=out
+MANIFEST=manifest.txt
+MODULES_PATH=deps/libs/JavaFX/linux_x64:deps/libs/Gson:deps/libs/Webp
+TEMP_DIR=temp
+JAREXEC_NAME=SeaJava.jar
+BJAREXEC_NAME=Start.jar
+# -----------------------------------------------------------------------------
+# DETECÇÃO DE SISTEMA OPERACIONAL (WINDOWS vs LINUX)
+# -----------------------------------------------------------------------------
+ifeq ($(OS),Windows_NT)
+    # Comandos no Windows
+	RESOURCES_DIR=src\main\resources
+    RM = rmdir /s /q
+    MKDIR = mkdir
+    COPY_RES = xcopy /E /I /Y
+    MV = move /Y
+    JAVAC = javac
+    JAR = jar
+    MODULES_PATH_WIN = deps\libs\JavaFX\windows_x64;deps\libs\Gson;deps\libs\Webp
+else
+    # Comandos no Linux / macOS
+	RESOURCES_DIR=src/main/resources
+    RM = rm -rf
+    MKDIR = mkdir -p
+    COPY_RES = rsync -av --exclude='*.java'
+    MV = mv
+    JAVAC = javac
+    JAR = jar
+endif
+
+CLASSJAVAFILES= \
+	$(SRC_DIR)/module-info.java \
+	$(SRC_DIR)/com/eryck/SeaJavaVideoDownloader/*.java
+
+BOOTSTRAPCLASSJAVAFILES= \
+	$(SRC_DIR)/com/eryck/bootstrap/*.java \
+	$(SRC_DIR)/org/tukaani/xz/*.java \
+	$(SRC_DIR)/org/tukaani/xz/check/*.java \
+	$(SRC_DIR)/org/tukaani/xz/common/*.java \
+	$(SRC_DIR)/org/tukaani/xz/delta/*.java \
+	$(SRC_DIR)/org/tukaani/xz/index/*.java \
+	$(SRC_DIR)/org/tukaani/xz/lz/*.java \
+	$(SRC_DIR)/org/tukaani/xz/lzma/*.java \
+	$(SRC_DIR)/org/tukaani/xz/rangecoder/*.java \
+	$(SRC_DIR)/org/tukaani/xz/simple/*.java
+
+BOOTSTRAPCLASS=com.eryck.bootstrap.StartMain
+
+all: clean prepare_deps
+	$(MAKE) build_downloader
+	$(MAKE) build_clean
+	$(MAKE) build_bootstrap
+	$(MAKE) build_clean
+
+build_downloader: compile pack
+
+build_bootstrap: compile_bootstrap bootstrap_pack
+
+compile:
+ifeq ($(OS),Windows_NT)
+	-if not exist "$(BUILD_DIR)" $(MKDIR) "$(BUILD_DIR)"
+	$(JAVAC) --release $(JRE_MIN_VERSION) --module-path "$(MODULES_PATH_WIN)" -d $(BUILD_DIR) $(CLASSJAVAFILES)
+	xcopy /E /I /Y /Q "$(RESOURCES_DIR)\com\eryck\SeaJavaVideoDownloader\*" "$(BUILD_DIR)\com\eryck\SeaJavaVideoDownloader\"
+else
+	$(MKDIR) $(BUILD_DIR)
+	$(JAVAC) --release $(JRE_MIN_VERSION) --module-path $(MODULES_PATH) -d $(BUILD_DIR) $(CLASSJAVAFILES)
+	$(COPY_RES) $(RESOURCES_DIR)/com/eryck/SeaJavaVideoDownloader/ $(BUILD_DIR)/com/eryck/SeaJavaVideoDownloader/
+endif
+
+compile_bootstrap:
+ifeq ($(OS),Windows_NT)
+	-if not exist "$(BUILD_DIR)" $(MKDIR) "$(BUILD_DIR)"
+	$(JAVAC) --release $(JRE_MIN_VERSION) -d $(BUILD_DIR) $(BOOTSTRAPCLASSJAVAFILES)
+	xcopy /E /I /Y /Q "$(RESOURCES_DIR)\com\eryck\bootstrap\*" "$(BUILD_DIR)\com\eryck\bootstrap\"
+	$(MV) "$(OUT_DIR)\$(JAREXEC_NAME)" "$(BUILD_DIR)\com\eryck\bootstrap\"
+else
+	$(MKDIR) $(BUILD_DIR)
+	$(JAVAC) --release $(JRE_MIN_VERSION) -d $(BUILD_DIR) $(BOOTSTRAPCLASSJAVAFILES)
+	$(COPY_RES) $(RESOURCES_DIR)/com/eryck/bootstrap/ $(BUILD_DIR)/com/eryck/bootstrap/
+	$(MV) $(OUT_DIR)/$(JAREXEC_NAME) $(BUILD_DIR)/com/eryck/bootstrap/
+endif
+
+pack:
+ifeq ($(OS),Windows_NT)
+	-if not exist $(OUT_DIR) $(MKDIR) $(OUT_DIR)
+else
+	$(MKDIR) $(OUT_DIR)
+endif
+	$(JAR) cvfm $(OUT_DIR)/$(JAREXEC_NAME) $(MANIFEST) -C $(BUILD_DIR) .
+
+bootstrap_pack:
+ifeq ($(OS),Windows_NT)
+	-if not exist $(OUT_DIR) $(MKDIR) $(OUT_DIR)
+else
+	$(MKDIR) $(OUT_DIR)
+endif
+	$(JAR) cvfe $(OUT_DIR)/$(BJAREXEC_NAME) $(BOOTSTRAPCLASS) -C $(BUILD_DIR) .
+
+clean: build_clean
+ifeq ($(OS),Windows_NT)
+	-if exist $(TEMP_DIR) $(RM) $(TEMP_DIR)
+	-if exist $(OUT_DIR) $(RM) $(OUT_DIR)
+	-if exist dist $(RM) dist
+else
+	$(RM) $(TEMP_DIR)
+	$(RM) $(OUT_DIR)
+	$(RM) dist
+endif
+
+build_clean:
+ifeq ($(OS),Windows_NT)
+	-if exist $(BUILD_DIR) $(RM) $(BUILD_DIR)
+else
+	$(RM) $(BUILD_DIR)
+endif
+
+build_linux_jpackage:
+	$(MAKE) clean
+	$(MAKE) build_downloader
+	$(MAKE) build_clean
+	$(MAKE) build_bootstrap
+	$(MAKE) build_clean
+	jpackage \
+		--type app-image \
+		--name "SeaJavaVideoDownloader" \
+		--app-version "1.0.0" \
+		--input $(OUT_DIR) \
+		--main-jar Start.jar \
+		--dest dist/linux
+	$(MAKE) build_clean
+
+build_win_jpackage:
+	$(MAKE) clean
+	$(MAKE) build_downloader
+	$(MAKE) build_clean
+	$(MAKE) build_bootstrap
+	$(MAKE) build_clean
+	jpackage \
+		--type app-image \
+		--name "SeaJavaVideoDownloader" \
+		--app-version "1.0.0" \
+		--input $(OUT_DIR) \
+		--main-jar Start.jar \
+		--dest dist/windows
+	$(MAKE) build_clean
+
+prepare_deps:
+	if [ ! -e "deps/libs" ]; then \
+  	  	mkdir -p "temp"; \
+  	  	curl -L -o temp/JavaFX_WINDOWS.zip \
+  	  	"https://download2.gluonhq.com/openjfx/26.0.2/openjfx-26.0.2_windows-x64_bin-sdk.zip"; \
+		curl -L -o temp/JavaFX_LINUX.zip \
+		"https://download2.gluonhq.com/openjfx/26.0.2/openjfx-26.0.2_linux-x64_bin-sdk.zip"; \
+		curl -L -o temp/gson-2.14.0.jar \
+		"https://repo1.maven.org/maven2/com/google/code/gson/gson/2.14.0/gson-2.14.0.jar"; \
+		curl -L -o temp/imageio-webp-3.14.0.jar \
+		"https://repo1.maven.org/maven2/com/twelvemonkeys/imageio/imageio-webp/3.14.0/imageio-webp-3.14.0.jar"; \
+		curl -L -o temp/imageio-core-3.14.0.jar \
+		"https://repo1.maven.org/maven2/com/twelvemonkeys/imageio/imageio-core/3.14.0/imageio-core-3.14.0.jar"; \
+		curl -L -o temp/common-lang-3.14.0.jar \
+		"https://repo1.maven.org/maven2/com/twelvemonkeys/common/common-lang/3.14.0/common-lang-3.14.0.jar"; \
+		cd "temp"; \
+		unzip JavaFX_WINDOWS.zip -d JavaFX_WINDOWS; \
+		unzip JavaFX_LINUX.zip -d JavaFX_LINUX; \
+		unzip Selenium.zip -d Selenium; \
+		cd ..; \
+		mkdir -p "deps/libs/Gson"; \
+		mkdir -p "deps/libs/JavaFX"; \
+		mkdir -p "deps/libs/Webp"; \
+		mv "temp/JavaFX_WINDOWS/javafx-sdk-26.0.2/lib" "deps/libs/JavaFX/windows_x64"; \
+		mv "temp/JavaFX_LINUX/javafx-sdk-26.0.2/lib" "deps/libs/JavaFX/linux_x64"; \
+		mv "temp/gson-2.14.0.jar" "deps/libs/Gson"; \
+		mv "temp/imageio-webp-3.14.0.jar" "deps/libs/Webp"; \
+		mv "temp/imageio-core-3.14.0.jar" "deps/libs/Webp"; \
+		mv "temp/common-lang-3.14.0.jar" "deps/libs/Webp"; \
+  	fi;
